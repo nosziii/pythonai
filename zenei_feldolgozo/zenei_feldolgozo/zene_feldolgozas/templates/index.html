@@ -1,0 +1,100 @@
+{% comment %} <!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenei Feldolgozó</title>
+    <!-- Ide jöhetnek a CSS fájlok és/vagy stílusok -->
+</head>
+<body>
+    <h1>Zenei Feldolgozó</h1>
+    <form id="zene-feltoltes" enctype="multipart/form-data">
+        <label for="zene-fajl">Zene feltöltése:</label>
+        <input type="file" id="zene-fajl" name="zene-fajl" accept=".mp3,.wav,.flac" required>
+        <button type="submit">Feldolgozás</button>
+    </form>
+    <!-- Ide jöhetnek az eredmények megjelenítésére szolgáló elemek -->
+    <!-- Ide jöhetnek a JavaScript fájlok és/vagy kódok -->
+</body>
+</html> {% endcomment %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenei Feldolgozó</title>
+</head>
+<body>
+    <h1>Zenei Feldolgozó</h1>
+    <p>Tölts fel egy zenefájlt, hogy szétbontsuk hangszerekre és kottát generáljunk belőle.</p>
+
+    <form id="upload-form">
+        <label for="audio-file">Válassz egy zenefájlt:</label>
+        <input type="file" name="audio-file" id="audio-file" required>
+        <button type="submit">Feldolgozás</button>
+    </form>
+    teszt
+    <div id="sheet-music"></div>
+</body>
+{% comment %} <script src="static/js/abcjs-basic-min.js"></script> {% endcomment %}
+<script src="{% static 'js/abcjs-basic-min.min.js' %}"></script>
+<script>
+    document.getElementById("upload-form").addEventListener("submit", function (event) {
+        event.preventDefault();
+    
+        const audioFile = document.getElementById("audio-file").files[0];
+        if (!audioFile) {
+            alert("Kérlek, válassz ki egy zenefájlt a feltöltéshez!");
+            return;
+        }
+    
+        const formData = new FormData();
+        formData.append("audio-file", audioFile);
+    
+        fetch("/feldolgozas/", {
+            method: "POST",
+            body: formData,
+        })
+            .then((response) => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error("Hiba történt a zene feldolgozása közben.");
+                }
+            })
+            .then((data) => {
+                console.log(data);
+                // A MusicXML fájl megjelenítése kottaként.
+                const musicxml = data.sheet_music;
+                displayMusicXML(musicxml);
+            })
+            .catch((error) => {
+                console.error("Hiba:", error);
+                alert("Hiba történt a zene feldolgozása közben. Kérlek, próbáld újra!");
+            });
+    });
+    
+    // A MusicXML fájl konvertálása ABC formátummá.
+    function convertMusicXMLtoABC(musicxml) {
+        const converter = new abcjs.parse.Parse();
+        const abcString = converter.musicXMLToABC(musicxml);
+        return abcString;
+    }
+    
+    // A kotta megjelenítése a megadott ABC formátumú adatok alapján.
+    function displaySheetMusic(abcString) {
+        const sheetMusicElement = document.getElementById("sheet-music");
+        abcjs.renderAbc(sheetMusicElement, abcString);
+    }
+    
+    // A MusicXML fájl megjelenítése kottaként.
+    function displayMusicXML(musicxml) {
+        const abcString = convertMusicXMLtoABC(musicxml);
+        displaySheetMusic(abcString);
+    }
+    
+</script>
+</html>
